@@ -9,7 +9,8 @@ The project also welcomes theological questions or seemingly trivial questions t
 - [ ] Advanced RAG memory for Chat History
 
 ## Screenshot of the Prototype
-<img width="1129" height="610" alt="image" src="https://github.com/user-attachments/assets/81a1d25a-d02a-4ddb-aa4c-ffbcfd544bb1" />
+<img width="1314" height="622" alt="image" src="https://github.com/user-attachments/assets/0793f6c4-874a-479f-9cec-06fafa6d1ab1" />
+
 
 
 

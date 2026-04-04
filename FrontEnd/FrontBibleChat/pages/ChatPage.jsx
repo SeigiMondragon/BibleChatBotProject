@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { chatSchema } from "../src/schemas/ChatSchema";
 import { chatServices } from "../services/ChatServices";
 import TextType from "../plugins/textTypeAnim";
+import ReactMarkdown from "react-markdown";
 
 const ChatPage = () => {
   const {
@@ -30,52 +31,71 @@ const ChatPage = () => {
     try {
       setIsLoading(true);
       const response = await chatServices.submitChat(userMessage, history);
+      const source = "\n\n**Source:** " + response?.sources.join(", ");
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: response?.answer ?? "" },
+        { role: "assistant", content: `${response?.answer ?? ""}${source}` },
       ]);
     } catch (error) {
       console.log(error);
     } finally {
       setIsLoading(false);
+      reset();
     }
   };
 
   return (
-    <main className="flex flex-row h-full min-h-screen">
-      <section className="bg-amber-400 w-full flex-1"></section>
+    <main className="flex flex-row h-screen overflow-hidden">
+      {/* <section className="bg-primary-foreground w-full flex-1"></section> */}
 
-      <section className="flex flex-col bg-green-200 w-full flex-[6_6_0%]">
+      <section className="flex flex-col bg-secondary w-full flex-[6_6_0%] min-h-0">
         {/* Upper Part */}
-        <div className=" bg-white w-full p-6">
-          <Label className="text-3xl">Bible Chat Bot</Label>
+        <div className="shrink-0 bg-primary w-full p-6">
+          <Label className="text-3xl text-primary-foreground">
+            Bible Chat Bot
+          </Label>
         </div>
 
         {/* Chat Part */}
         {messages.length > 0 ? (
-          <div className="flex-[3_4_0%] min-h-0 flex flex-col overflow-y-auto py-5">
+          <div className="flex-1 min-h-0 overflow-y-auto py-5 flex flex-col">
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`border border-black px-5 mx-5 my-5 rounded-2xl  ${
+                className={`border border-primary px-5 mx-5 my-5 rounded-2xl   ${
                   message.role === "user"
-                    ? "self-end bg-gray-200"
-                    : "self-start bg-blue-200"
+                    ? "self-end text-primary-foreground bg-primary"
+                    : "self-start text-primary bg-primary-foreground"
                 }`}
               >
-                {message.content}
+                <ReactMarkdown>{message.content}</ReactMarkdown>
               </div>
             ))}
             {isLoading && (
-              <div className="border border-black px-5 mx-5 my-5 rounded-2xl self-start bg-blue-200">
-                Thinking...
+              <div className="border border-black px-5 mx-5 my-5 rounded-2xl self-start bg-">
+                <TextType
+                  className="text-primary bg-primary-foreground"
+                  text={[
+                    "Looking for the Verses",
+                    "Aligning Answers with the Bible",
+                  ]}
+                  typingSpeed={75}
+                  pauseDuration={1500}
+                  showCursor
+                  cursorCharacter="_"
+                  deletingSpeed={50}
+                  variableSpeedEnabled={false}
+                  variableSpeedMin={60}
+                  variableSpeedMax={120}
+                  cursorBlinkDuration={0.5}
+                />
               </div>
             )}
           </div>
         ) : (
-          <div className="flex-[4_4_0%] flex w-full items-center justify-center px-4">
+          <div className="flex-1 min-h-0 flex w-full items-center justify-center px-4">
             <TextType
-              className="text-3xl"
+              className="text-3xl text-primary bg-primary-foreground"
               text={[
                 "Hi I am BibleBot",
                 "Your Personal Bible Chat Bot",
@@ -95,18 +115,22 @@ const ChatPage = () => {
         )}
 
         {/* Prompt Part */}
-        <div className="flex-[1_1_0%]">
+        <div className="shrink-0">
           <form
-            className="flex h-full justify-center items-center bg-white w-full max-w-full py-5 px-10"
+            className="flex justify-center items-center bg-primary w-full max-w-full py-5 px-10"
             onSubmit={handleSubmit(onSubmit)}
           >
             <Textarea
-              className="border-black me-3 w-9/12 resize-none"
+              className="border-secondary-foreground text-primary bg-primary-foreground me-3 w-9/12 resize-none"
               placeholder="Type your message here"
               {...register("prompt")}
             />
 
-            <Button type="submit" className="py-5 px-5" disabled={isLoading}>
+            <Button
+              type="submit"
+              className={`py-5 px-5 ${isLoading ? "bg-primary text-primary-foreground" : " border border-primary-foreground bg-primary-foreground text-primary"}`}
+              disabled={isLoading}
+            >
               {isLoading ? "Sending..." : "Send"}
             </Button>
           </form>

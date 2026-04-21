@@ -31,6 +31,7 @@
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-special: var(--special);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
@@ -55,10 +56,11 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #30364f;
-  --primary-foreground: #e1d9bc;
-  --secondary: #acbac4;
-  --secondary-foreground: #f0f0db;
+  --primary: #2d3142;
+  --primary-foreground: #ffffff;
+  --secondary: #4f5d75;
+  --special: #ef8354;
+  --secondary-foreground: #d6cdd1;
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
@@ -93,7 +95,8 @@
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
+  --special: #ef8354;
+  --secondary-foreground: oklch(80.94% 0.00222 14.918);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
@@ -123,6 +126,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Poppins", sans-serif;
   }
   html {
     @apply font-sans;

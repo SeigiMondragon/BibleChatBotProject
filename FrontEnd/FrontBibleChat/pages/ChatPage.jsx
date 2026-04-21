@@ -9,7 +9,7 @@ import { chatSchema } from "../src/schemas/ChatSchema";
 import { chatServices } from "../services/ChatServices";
 import TextType from "../plugins/textTypeAnim";
 import ReactMarkdown from "react-markdown";
-
+import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
 const ChatPage = () => {
   const {
     register,
@@ -48,12 +48,14 @@ const ChatPage = () => {
     <main className="flex flex-row h-screen overflow-hidden">
       {/* <section className="bg-primary-foreground w-full flex-1"></section> */}
 
-      <section className="flex flex-col bg-secondary w-full flex-[6_6_0%] min-h-0">
+      <section className="flex flex-col bg-white w-full flex-[6_6_0%] min-h-0">
         {/* Upper Part */}
-        <div className="shrink-0 bg-primary w-full p-6">
-          <Label className="text-3xl text-primary-foreground">
-            Bible Chat Bot
-          </Label>
+        <div className="shrink-0 bg-primary w-full p-3">
+          <img
+            src={BibleBotLogo2}
+            alt="Bible Chat Bot"
+            className="w-40 h-auto"
+          />
         </div>
 
         {/* Chat Part */}
@@ -72,7 +74,7 @@ const ChatPage = () => {
               </div>
             ))}
             {isLoading && (
-              <div className="border border-black px-5 mx-5 my-5 rounded-2xl self-start bg-">
+              <div className="border border-black px-5 mx-5 my-5 rounded-2xl self-start ">
                 <TextType
                   className="text-primary bg-primary-foreground"
                   text={[
@@ -121,14 +123,14 @@ const ChatPage = () => {
             onSubmit={handleSubmit(onSubmit)}
           >
             <Textarea
-              className="border-secondary-foreground text-primary bg-primary-foreground me-3 w-9/12 resize-none"
-              placeholder="Type your message here"
+              className="border-secondary-foreground bg-white placeholder:text-primary font-bold me-3 w-9/12 resize-none"
+              placeholder="Type your message here..."
               {...register("prompt")}
             />
 
             <Button
               type="submit"
-              className={`py-5 px-5 ${isLoading ? "bg-primary text-primary-foreground" : " border border-primary-foreground bg-primary-foreground text-primary"}`}
+              className={`py-5 px-5 ${isLoading ? "bg-primary text-special" : " border border-secondary bg-secondary text-white"}`}
               disabled={isLoading}
             >
               {isLoading ? "Sending..." : "Send"}

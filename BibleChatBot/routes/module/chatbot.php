@@ -5,6 +5,6 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::controller(AIController::class)->group(function(){
+Route::middleware('auth:sanctum')->controller(AIController::class)->group(function(){
     Route::post('chat', 'chat');
 });

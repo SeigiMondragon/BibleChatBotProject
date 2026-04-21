@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,23 +10,53 @@ import { chatServices } from "../services/ChatServices";
 import TextType from "../plugins/textTypeAnim";
 import ReactMarkdown from "react-markdown";
 import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ChatSideBar } from "@/components/custom/chatSidebar";
+
+const RECENT_CHATS_KEY = "recent_chats";
+
 const ChatPage = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
+  const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(chatSchema),
   });
 
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [recentChats, setRecentChats] = useState([]);
+
+  useEffect(() => {
+    try {
+      const savedRecentChats = JSON.parse(
+        localStorage.getItem(RECENT_CHATS_KEY) ?? "[]",
+      );
+      if (Array.isArray(savedRecentChats)) {
+        setRecentChats(savedRecentChats);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, []);
+
+  const saveRecentChat = (chatText) => {
+    const normalizedChat = chatText.trim();
+    if (!normalizedChat) return;
+
+    setRecentChats((prev) => {
+      const nextRecentChats = [
+        normalizedChat,
+        ...prev.filter((chat) => chat !== normalizedChat),
+      ].slice(0, 30);
+
+      localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(nextRecentChats));
+      return nextRecentChats;
+    });
+  };
 
   const onSubmit = async (data) => {
     const userMessage = data.prompt;
     if (!userMessage) return;
 
+    saveRecentChat(userMessage);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     try {
       setIsLoading(true);
@@ -45,17 +75,25 @@ const ChatPage = () => {
   };
 
   return (
-    <main className="flex flex-row h-screen overflow-hidden">
-      {/* <section className="bg-primary-foreground w-full flex-1"></section> */}
-
-      <section className="flex flex-col bg-white w-full flex-[6_6_0%] min-h-0">
+    <SidebarProvider className="h-screen w-full overflow-hidden">
+      {/* Sidebar + content must be siblings inside SidebarProvider */}
+      <ChatSideBar recentChats={recentChats} />
+      <section className="flex flex-1 flex-col bg-white min-h-0">
         {/* Upper Part */}
-        <div className="shrink-0 bg-primary w-full p-3">
-          <img
-            src={BibleBotLogo2}
-            alt="Bible Chat Bot"
-            className="w-40 h-auto"
-          />
+        <div className="flex justify-between items-center shrink-0 bg-primary w-full p-3">
+          <div className="flex items-center gap-3">
+            <SidebarTrigger className="text-white hover:bg-white/10 hover:text-white" />
+            <img
+              src={BibleBotLogo2}
+              alt="Bible Chat Bot"
+              className="w-40 h-auto"
+            />
+          </div>
+
+          <p className="text-white font-bold">
+            {" "}
+            <i className="bi bi-person-fill"></i> Bible Chat Bot
+          </p>
         </div>
 
         {/* Chat Part */}
@@ -86,9 +124,6 @@ const ChatPage = () => {
                   showCursor
                   cursorCharacter="_"
                   deletingSpeed={50}
-                  variableSpeedEnabled={false}
-                  variableSpeedMin={60}
-                  variableSpeedMax={120}
                   cursorBlinkDuration={0.5}
                 />
               </div>
@@ -108,9 +143,6 @@ const ChatPage = () => {
               showCursor
               cursorCharacter="_"
               deletingSpeed={50}
-              variableSpeedEnabled={false}
-              variableSpeedMin={60}
-              variableSpeedMax={120}
               cursorBlinkDuration={0.5}
             />
           </div>
@@ -124,9 +156,12 @@ const ChatPage = () => {
           >
             <Textarea
               className="border-secondary-foreground bg-white placeholder:text-primary font-bold me-3 w-9/12 resize-none"
-              placeholder="Type your message here..."
+              placeholder={"Type your message here..."}
               {...register("prompt")}
             />
+            {/* {errors.prompt?.message && (
+              <p className="text-red-500">{errors.prompt.message}</p>
+            )} */}
 
             <Button
               type="submit"
@@ -138,7 +173,7 @@ const ChatPage = () => {
           </form>
         </div>
       </section>
-    </main>
+    </SidebarProvider>
   );
 };
 

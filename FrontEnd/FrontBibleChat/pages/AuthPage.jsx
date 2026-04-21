@@ -12,8 +12,31 @@ import { Button } from "@/components/ui/button";
 import BibleBotLogo from "@/assets/BibleBotLogo.svg";
 import Blob from "@/assets/Blob.svg";
 import Blob2 from "@/assets/Blob2.svg";
-
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { AuthSchema } from "../src/schemas/AuthSchema";
+import { authServices } from "../services/AuthServices";
+import { useNavigate } from "react-router-dom";
 const AuthPage = () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm({ resolver: zodResolver(AuthSchema) });
+  const navigate = useNavigate();
+  const onSubmit = async (data) => {
+    try {
+      const response = await authServices.login(data.email, data.password);
+      console.log("This is the response", response);
+      if (response.success) {
+        navigate("/chat");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-white lg:flex">
       <img
@@ -51,26 +74,34 @@ const AuthPage = () => {
         </div>
 
         {/*Body*/}
-        <div className="flex w-full flex-col gap-y-4 sm:gap-y-5">
-          <div>
-            <Input
-              className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
-              placeholder="Email"
-            />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex w-full flex-col gap-y-4 sm:gap-y-5">
+            <div>
+              <Input
+                className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
+                placeholder="Email"
+                {...register("email")}
+              />
+            </div>
+            <div>
+              <Input
+                className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
+                placeholder="Password"
+                {...register("password")}
+              />
+            </div>
           </div>
-          <div>
-            <Input
-              className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
-              placeholder="Password"
-            />
-          </div>
-        </div>
 
-        <div className="w-full">
-          <Button className="w-full py-5 rounded-lg bg-primary text-white">
-            Sign In
-          </Button>
-        </div>
+          <div className="w-full">
+            <Button
+              className="w-full py-5 rounded-lg bg-primary text-white"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing in..." : "Sign In"}
+            </Button>
+          </div>
+        </form>
         <div className="w-full">
           <hr className="w-full border border-t border-primary" />
         </div>

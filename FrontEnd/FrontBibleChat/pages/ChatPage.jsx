@@ -23,7 +23,8 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentChats, setRecentChats] = useState([]);
-
+  const [conversation_id, setConversation_id] = useState(null);
+  const [history, setHistory] = useState([]);
   useEffect(() => {
     try {
       const savedRecentChats = JSON.parse(
@@ -48,7 +49,6 @@ const ChatPage = () => {
       ].slice(0, 30);
 
       localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(nextRecentChats));
-      return nextRecentChats;
     });
   };
 
@@ -57,11 +57,18 @@ const ChatPage = () => {
     if (!userMessage) return;
 
     saveRecentChat(userMessage);
+    const history = messages.map(({ role, content }) => ({ role, content }));
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     try {
       setIsLoading(true);
-      const response = await chatServices.submitChat(userMessage, history);
+
+      const response = await chatServices.submitChat(
+        userMessage,
+        history,
+        conversation_id,
+      );
       const source = "\n\n**Source:** " + response?.sources.join(", ");
+      setConversation_id(response?.conversation_id);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: `${response?.answer ?? ""}${source}` },

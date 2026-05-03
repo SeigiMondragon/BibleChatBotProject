@@ -11,9 +11,10 @@ import {
   SidebarMenuButton,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 
-export function ChatSideBar({ recentChats = [] }) {
+export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
 
   return (
@@ -25,7 +26,9 @@ export function ChatSideBar({ recentChats = [] }) {
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton type="button">New Chat</SidebarMenuButton>
+              <SidebarMenuButton type="button" onClick={onNewChat}>
+                New Chat
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton type="button">Search Chat</SidebarMenuButton>
@@ -47,15 +50,20 @@ export function ChatSideBar({ recentChats = [] }) {
               {isRecentOpen && (
                 <SidebarMenuSub>
                   {recentChats.length > 0 ? (
-                    recentChats.map((chat, index) => (
-                      <SidebarMenuSubItem key={`${chat}-${index}`}>
+                    recentChats.map((chat) => (
+                      <SidebarMenuSubItem key={chat.conversation_id}>
                         <SidebarMenuSubButton asChild>
                           <button
                             type="button"
-                            className="w-full text-left"
-                            title={chat}
+                            className="flex w-full min-w-0 items-center text-left text-white hover:bg-secondary"
+                            title={chat.conversation_names}
+                            onClick={() =>
+                              selectRecentChat(chat.conversation_id)
+                            }
                           >
-                            {chat}
+                            <span className="block w-full truncate">
+                              {chat.conversation_names}
+                            </span>
                           </button>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>

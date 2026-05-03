@@ -25,8 +25,10 @@ const ChatPage = () => {
   const [recentChats, setRecentChats] = useState([]);
   const [conversation_id, setConversation_id] = useState(null);
   const [history, setHistory] = useState([]);
+  const [convosNames, setConvosNames] = useState({});
   useEffect(() => {
     try {
+      getConvosNames();
       const savedRecentChats = JSON.parse(
         localStorage.getItem(RECENT_CHATS_KEY) ?? "[]",
       );
@@ -54,14 +56,16 @@ const ChatPage = () => {
 
   const onSubmit = async (data) => {
     const userMessage = data.prompt;
+    console.log("userMessage", userMessage);
     if (!userMessage) return;
-
-    saveRecentChat(userMessage);
-    const history = messages.map(({ role, content }) => ({ role, content }));
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    const history = messages.map(({ role, message }) => ({
+      role,
+      content: message,
+    }));
+    console.log("history", history);
+    setMessages((prev) => [...prev, { role: "user", message: userMessage }]);
     try {
       setIsLoading(true);
-
       const response = await chatServices.submitChat(
         userMessage,
         history,
@@ -71,7 +75,7 @@ const ChatPage = () => {
       setConversation_id(response?.conversation_id);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `${response?.answer ?? ""}${source}` },
+        { role: "assistant", message: `${response?.answer ?? ""}${source}` },
       ]);
     } catch (error) {
       console.log(error);
@@ -81,10 +85,46 @@ const ChatPage = () => {
     }
   };
 
+  const newChat = async () => {
+    setMessages([]);
+
+    setConversation_id(null);
+    setHistory([]);
+  };
+
+  const getConvosNames = async () => {
+    try {
+      const response = await chatServices.getConversationName();
+      const transformedConvos = response.conversation_id.map((id, index) => ({
+        conversation_id: id,
+        conversation_names: response.conversation_names[index],
+      }));
+      setConvosNames(transformedConvos);
+    } catch (error) {
+      console.log("Error fetching conversation names: ", error);
+    }
+  };
+
+  const selectRecentChat = async (conversation_id) => {
+    try {
+      setConversation_id(conversation_id);
+      const response =
+        await chatServices.getConversationMessages(conversation_id);
+      setMessages(response);
+      console.log("This is the response", response);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden">
       {/* Sidebar + content must be siblings inside SidebarProvider */}
-      <ChatSideBar recentChats={recentChats} />
+      <ChatSideBar
+        recentChats={convosNames}
+        onNewChat={newChat}
+        selectRecentChat={selectRecentChat}
+      />
       <section className="flex flex-1 flex-col bg-white min-h-0">
         {/* Upper Part */}
         <div className="flex justify-between items-center shrink-0 bg-primary w-full p-3">
@@ -115,7 +155,7 @@ const ChatPage = () => {
                     : "self-start text-primary bg-primary-foreground"
                 }`}
               >
-                <ReactMarkdown>{message.content}</ReactMarkdown>
+                <ReactMarkdown>{message.message}</ReactMarkdown>
               </div>
             ))}
             {isLoading && (

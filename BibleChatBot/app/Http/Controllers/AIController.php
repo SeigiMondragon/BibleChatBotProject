@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Log;
 class AIController extends Controller
 {
     public function chat (Request $request){
-        $userQuestion = $request->input('prompt');
+
+        try {
+ $userQuestion = $request->input('prompt');
         $userHistory = $request->input('history');
         $user = auth()->user();
         Log::channel('custom')->info($user);
@@ -38,9 +40,9 @@ class AIController extends Controller
         ],
 
 
-    ]);
+        ]);
 
-    $titleResponse = OpenAI::chat()->create([
+     $titleResponse = OpenAI::chat()->create([
             'model' => 'gpt-4o',
             'messages' => [
                 ['role' => 'system', 'content' => "Summarize the following conversation into a concise and descriptive title."],
@@ -50,46 +52,71 @@ class AIController extends Controller
             ],
         ]);
 
-    $title = $titleResponse->choices[0]->message->content;
+        $title = $titleResponse->choices[0]->message->content;
 
 
-    $conversationId = $request->input('conversation_id');
-    $conversation = null;
+        $conversationId = $request->input('conversation_id');
+        $conversation = null;
 
-    if($conversationId){
-        $conversation = Conversation::where('id', $conversationId)
-        ->where('user_id', $user->id)
-        ->first();
+        if($conversationId){
+            $conversation = Conversation::where('id', $conversationId)
+            ->where('user_id', $user->id)
+            ->first();
+        }
+
+        if(!$conversation){
+            $conversation =Conversation::create([
+                'name' => $title,
+                'user_id' => $user->id,
+            ]);
+        }
+
+        $messagesToSave = [
+            [
+                'conversation_id' => $conversation->id ?? null,
+                'role' => 'user',
+                'message' => $userQuestion,
+            ],
+            [
+                'conversation_id' => $conversation->id ?? null,
+                'role' => $response->choices[0]->message->role,
+                'message' => $response->choices[0]->message->content,
+            ],
+        ];
+
+        foreach ($messagesToSave as $messageData) {
+            Message::create($messageData);
+        }
+
+        return response()->json([
+            'conversation_id' => $conversation->id,
+            "answer" => $response->choices[0]->message->content,
+            "sources" => $verses->pluck('reference')
+        ],200);
+        }catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
     }
 
-    if(!$conversation){
-        $conversation =Conversation::create([
-            'name' => $title,
-            'user_id' => $user->id,
-        ]);
+    public function getAllConversationNames(){
+        try {
+            $user = auth()->user();
+            $conversation_names = Conversation::where('user_id', $user->id)->pluck('name');
+            $conversation_id = Conversation::where('user_id', $user->id)->pluck('id');
+            return response()->json([
+                "conversation_names" => $conversation_names,
+                "conversation_id" => $conversation_id
+            ],200);
+        }catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
     }
 
-    $messagesToSave = [
-        [
-            'conversation_id' => $conversation->id ?? null,
-            'role' => 'user',
-            'message' => $userQuestion,
-        ],
-        [
-            'conversation_id' => $conversation->id ?? null,
-            'role' => $response->choices[0]->message->role,
-            'message' => $response->choices[0]->message->content,
-        ],
-    ];
-
-    foreach ($messagesToSave as $messageData) {
-        Message::create($messageData);
-    }
-
-    return response()->json([
-        'conversation_id' => $conversation->id,
-        "answer" => $response->choices[0]->message->content,
-        "sources" => $verses->pluck('reference')
-    ],200);
+    public function getConversationMessages(  $conversation_id){
+        $conversation = Conversation::where('id', $conversation_id)->first();;
+        $messages = Message::where('conversation_id', $conversation->id)->get();
+        return response()->json($messages,200);
     }
 }

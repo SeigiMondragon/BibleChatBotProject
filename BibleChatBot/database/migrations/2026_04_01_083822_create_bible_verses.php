@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('reference'); // e.g., "John 3:16"
             $table->text('content');     // The actual text
-            $table->vector('embedding', 1536); // Store the AI-calculated "meaning"
+            $table->vector('embedding')->nullable(); // Store the AI-calculated "meaning"
             $table->timestamps();
         });
     }

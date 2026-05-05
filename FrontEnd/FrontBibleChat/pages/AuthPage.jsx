@@ -95,7 +95,7 @@ const AuthPage = () => {
             </div>
           </div>
 
-          <div className="w-full">
+          <div className="w-full mt-5">
             <Button
               className="w-full py-5 rounded-lg bg-primary text-white"
               type="submit"
@@ -111,7 +111,10 @@ const AuthPage = () => {
         <div className="w-full text-center lg:text-left">
           <p className="text-primary">
             Don't have an account?{" "}
-            <span className="text-special" onClick={handleRegister}>
+            <span
+              className="text-special cursor-pointer hover:underline"
+              onClick={handleRegister}
+            >
               Sign Up
             </span>
           </p>

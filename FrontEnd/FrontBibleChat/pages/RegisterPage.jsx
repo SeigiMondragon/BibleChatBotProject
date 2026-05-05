@@ -32,15 +32,16 @@ const RegisterPage = () => {
         data.email,
         data.password,
       );
-      //   console.log("This is the response", response);
+
       if (response.success) {
-        navigate("/chat");
+        navigate("/auth");
       }
     } catch (error) {
       console.log(error);
     }
   };
 
+  const handleSignIn = () => navigate("/auth");
   return (
     <div className="relative min-h-screen overflow-hidden bg-white lg:flex">
       <img
@@ -103,7 +104,7 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          <div className="w-full">
+          <div className="w-full mt-5">
             <Button
               className="w-full py-5 rounded-lg bg-primary text-white"
               type="submit"
@@ -118,7 +119,13 @@ const RegisterPage = () => {
         </div>
         <div className="w-full text-center lg:text-left">
           <p className="text-primary">
-            Don't have an account? <span className="text-special">Sign Up</span>
+            Already have an account?{" "}
+            <span
+              className="text-special cursor-pointer hover:underline"
+              onClick={handleSignIn}
+            >
+              Sign In
+            </span>
           </p>
         </div>
       </div>

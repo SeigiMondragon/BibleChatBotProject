@@ -12,10 +12,12 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarMenuBadge,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import BibleBotLogo3 from "@/assets/BibleBotLogo3.svg";
 export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
+  const { setOpen } = useSidebar();
 
   return (
     <Sidebar collapsible="icon" className="border border-secondary">
@@ -24,14 +26,25 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton type="button" onClick={onNewChat}>
-                <i className="bi bi-pencil-square"></i> <span>New Chat</span>
+              <SidebarMenuButton
+                type="button"
+                onClick={(e) => {
+                  setOpen(true);
+                  if (onNewChat) onNewChat(e);
+                }}
+              >
+                <i className="bi bi-pencil-square"></i>{" "}
+                <span className="group-data-[collapsible=icon]:hidden">
+                  New Chat
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton type="button">
+              <SidebarMenuButton type="button" onClick={() => setOpen(true)}>
                 <i className="bi bi-search"></i>
-                <span>Search Chat</span>
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Search Chat
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -41,12 +54,17 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 type="button"
-                onClick={() => setIsRecentOpen((prev) => !prev)}
+                onClick={() => {
+                  setOpen(true);
+                  setIsRecentOpen((prev) => !prev);
+                }}
               >
                 <i className="bi bi-clock-history"></i>
                 <span className="flex justify-evenly items-center">
-                  <span>Recent Chat</span>
-                  <span className="ms-2 text-xs group-data-[collapsible=icon]:hidden">
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    Recent Chat
+                  </span>
+                  <span className="ml-auto text-xs group-data-[collapsible=icon]:hidden">
                     {isRecentOpen ? (
                       <i className="bi bi-chevron-down"></i>
                     ) : (
@@ -92,9 +110,11 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
       <SidebarFooter className="bg-primary text-white">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarMenuButton onClick={() => setOpen(true)}>
               <i className="bi bi-person-fill"></i>
-              <span>Juan Rafael Camasis</span>
+              <span className="group-data-[collapsible=icon]:hidden">
+                Juan Rafael Camasis
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

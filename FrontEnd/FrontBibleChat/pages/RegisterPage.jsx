@@ -14,22 +14,25 @@ import Blob from "@/assets/Blob.svg";
 import Blob2 from "@/assets/Blob2.svg";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { AuthSchema } from "../src/schemas/AuthSchema";
+import { RegisterSchema } from "../src/schemas/RegisterSchema";
 import { authServices } from "../services/AuthServices";
 import { useNavigate } from "react-router-dom";
-
-const AuthPage = () => {
+const RegisterPage = () => {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm({ resolver: zodResolver(AuthSchema) });
+  } = useForm({ resolver: zodResolver(RegisterSchema) });
   const navigate = useNavigate();
   const onSubmit = async (data) => {
     try {
-      const response = await authServices.login(data.email, data.password);
-      console.log("This is the response", response);
+      const response = await authServices.register(
+        data.username,
+        data.email,
+        data.password,
+      );
+      //   console.log("This is the response", response);
       if (response.success) {
         navigate("/chat");
       }
@@ -37,8 +40,6 @@ const AuthPage = () => {
       console.log(error);
     }
   };
-
-  const handleRegister = () => navigate("/register");
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white lg:flex">
@@ -82,6 +83,13 @@ const AuthPage = () => {
             <div>
               <Input
                 className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
+                placeholder="Username"
+                {...register("username")}
+              />
+            </div>
+            <div>
+              <Input
+                className="mt-3 py-6 font-bold border-3 border-primary bg-secondary placeholder:text-secondary-foreground sm:mt-5 sm:py-7"
                 placeholder="Email"
                 {...register("email")}
               />
@@ -110,10 +118,7 @@ const AuthPage = () => {
         </div>
         <div className="w-full text-center lg:text-left">
           <p className="text-primary">
-            Don't have an account?{" "}
-            <span className="text-special" onClick={handleRegister}>
-              Sign Up
-            </span>
+            Don't have an account? <span className="text-special">Sign Up</span>
           </p>
         </div>
       </div>
@@ -127,4 +132,4 @@ const AuthPage = () => {
   );
 };
 
-export default AuthPage;
+export default RegisterPage;

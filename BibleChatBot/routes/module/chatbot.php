@@ -9,4 +9,5 @@ Route::middleware('auth:sanctum')->controller(AIController::class)->group(functi
     Route::post('chat', 'chat');
     Route::get("conversationNames", "getAllConversationNames");
     Route::get("conversationMessages/{conversation_id}", "getConversationMessages");
+    Route::get("conversationNameByName", "getConversationNameByName");
 });

@@ -119,4 +119,18 @@ class AIController extends Controller
         $messages = Message::where('conversation_id', $conversation->id)->get();
         return response()->json($messages,200);
     }
+
+    public function getConversationNameByName(Request $request){
+        try {
+            $name = $request->input('name');
+            $conversations  = Conversation::search( $name)->get();
+            return response()->json([
+                'success' => true,
+                "conversations" => $conversations
+
+            ],200);
+        }catch(\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

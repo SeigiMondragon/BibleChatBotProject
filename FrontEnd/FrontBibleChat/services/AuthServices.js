@@ -15,4 +15,13 @@ export const authServices = {
     });
     return response.data;
   },
+  logout: async () => {
+    localStorage.removeItem("token");
+  },
+  getUser: async () => {
+    const token = localStorage.getItem("token");
+    ax.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    const response = await ax.get("api/auth/me");
+    return response.data;
+  },
 };

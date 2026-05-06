@@ -15,9 +15,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import BibleBotLogo3 from "@/assets/BibleBotLogo3.svg";
+import { useAuth } from "../../hooks/useAuth";
 export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
   const { setOpen } = useSidebar();
+  const { userData, loading, error } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border border-secondary">
@@ -113,7 +115,7 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
             <SidebarMenuButton onClick={() => setOpen(true)}>
               <i className="bi bi-person-fill"></i>
               <span className="group-data-[collapsible=icon]:hidden">
-                Juan Rafael Camasis
+                {userData?.user.username}
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

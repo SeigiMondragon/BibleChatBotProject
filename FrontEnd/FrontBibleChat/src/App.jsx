@@ -9,7 +9,7 @@ import ChatLayout from "../layout/chatlayout";
 function App() {
   return (
     <Routes>
-      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/" element={<AuthPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
       <Route path="/chat" element={<ChatLayout />}>

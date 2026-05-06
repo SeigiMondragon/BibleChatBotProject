@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSideBar } from "@/components/custom/chatSidebar";
+import { useAuth } from "../src/hooks/useAuth";
 
 const RECENT_CHATS_KEY = "recent_chats";
 
@@ -117,6 +118,7 @@ const ChatPage = () => {
     }
   };
 
+  const { user, loading, error } = useAuth();
   return (
     <div className="flex w-full h-screen ">
       <SidebarProvider>
@@ -139,11 +141,6 @@ const ChatPage = () => {
                 className="w-30 h-auto"
               />
             </div>
-
-            <p className="text-white font-bold">
-              {" "}
-              <i className="bi bi-person-fill"></i> Bible Chat Bot
-            </p>
           </div>
 
           {/* Chat Part */}

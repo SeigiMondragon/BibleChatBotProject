@@ -82,4 +82,12 @@ class AuthController extends Controller
         }
         $user->currentAccessToken()->delete();
     }
+
+    public function getMe() {
+        $user = Auth::user();
+        return response()->json([
+            "success" => true,
+            "user" => $user
+        ]);
+    }
 }

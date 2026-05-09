@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,12 +14,47 @@ import {
   SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useNavigate } from "react-router-dom";
 import BibleBotLogo3 from "@/assets/BibleBotLogo3.svg";
 import { useAuth } from "../../hooks/useAuth";
-export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
+import { chatServices } from "../../../services/ChatServices";
+
+export function ChatSideBar({ onNewChat }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
   const { setOpen } = useSidebar();
   const { userData, loading, error } = useAuth();
+  const [convosNames, setConvosNames] = useState([]);
+  const navigate = useNavigate();
+  const handleSearch = () => {
+    navigate("/chat/search");
+  };
+  const navChats = (id) => navigate(`/chat/${id}`);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchConversations = async () => {
+      try {
+        const response = await chatServices.getConversationName();
+        if (isMounted) {
+          const transformedConvos = response.conversation_id.map(
+            (id, index) => ({
+              conversation_id: id,
+              conversation_names: response.conversation_names[index],
+            }),
+          );
+          setConvosNames(transformedConvos);
+        }
+      } catch (error) {
+        console.log("Error fetching conversation names: ", error);
+      }
+    };
+
+    fetchConversations();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <Sidebar collapsible="icon" className="border border-secondary">
@@ -32,7 +67,7 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
                 type="button"
                 onClick={(e) => {
                   setOpen(true);
-                  if (onNewChat) onNewChat(e);
+                  navigate("/chat");
                 }}
               >
                 <i className="bi bi-pencil-square"></i>{" "}
@@ -42,7 +77,13 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton type="button" onClick={() => setOpen(true)}>
+              <SidebarMenuButton
+                type="button"
+                onClick={() => {
+                  handleSearch();
+                  setOpen(true);
+                }}
+              >
                 <i className="bi bi-search"></i>
                 <span className="group-data-[collapsible=icon]:hidden">
                   Search Chat
@@ -77,17 +118,15 @@ export function ChatSideBar({ recentChats = [], onNewChat, selectRecentChat }) {
               </SidebarMenuButton>
               {isRecentOpen && (
                 <SidebarMenuSub>
-                  {recentChats.length > 0 ? (
-                    recentChats.map((chat) => (
+                  {convosNames.length > 0 ? (
+                    convosNames.map((chat) => (
                       <SidebarMenuSubItem key={chat.conversation_id}>
                         <SidebarMenuSubButton asChild>
                           <button
                             type="button"
                             className="flex w-full min-w-0 items-center text-left text-white hover:bg-secondary"
                             title={chat.conversation_names}
-                            onClick={() =>
-                              selectRecentChat(chat.conversation_id)
-                            }
+                            onClick={() => navChats(chat.conversation_id)}
                           >
                             <span className="block w-full truncate">
                               {chat.conversation_names}

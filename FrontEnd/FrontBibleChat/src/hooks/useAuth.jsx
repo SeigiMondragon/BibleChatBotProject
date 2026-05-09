@@ -11,7 +11,7 @@ export const useAuth = () => {
       try {
         const user = await authServices.getUser();
         setUserData(user);
-        console.log("This is the user", user);
+        // console.log("This is the user", user);
       } catch (error) {
         setError(error);
       } finally {

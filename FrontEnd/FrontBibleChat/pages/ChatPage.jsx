@@ -13,6 +13,7 @@ import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSideBar } from "@/components/custom/chatSidebar";
 import { useAuth } from "../src/hooks/useAuth";
+import { useParams } from "react-router-dom";
 
 const RECENT_CHATS_KEY = "recent_chats";
 
@@ -20,16 +21,16 @@ const ChatPage = () => {
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(chatSchema),
   });
-
+  const { convoID } = useParams();
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentChats, setRecentChats] = useState([]);
   const [conversation_id, setConversation_id] = useState(null);
   const [history, setHistory] = useState([]);
-  const [convosNames, setConvosNames] = useState({});
+
   useEffect(() => {
     try {
-      getConvosNames();
+      // getConvosNames();
       const savedRecentChats = JSON.parse(
         localStorage.getItem(RECENT_CHATS_KEY) ?? "[]",
       );
@@ -40,6 +41,15 @@ const ChatPage = () => {
       console.log(error);
     }
   }, []);
+
+  useEffect(() => {
+    if (convoID) {
+      selectRecentChat(convoID);
+      setConversation_id(convoID);
+    } else {
+      newChat();
+    }
+  }, [convoID]);
 
   const saveRecentChat = (chatText) => {
     const normalizedChat = chatText.trim();
@@ -88,22 +98,8 @@ const ChatPage = () => {
 
   const newChat = async () => {
     setMessages([]);
-
     setConversation_id(null);
     setHistory([]);
-  };
-
-  const getConvosNames = async () => {
-    try {
-      const response = await chatServices.getConversationName();
-      const transformedConvos = response.conversation_id.map((id, index) => ({
-        conversation_id: id,
-        conversation_names: response.conversation_names[index],
-      }));
-      setConvosNames(transformedConvos);
-    } catch (error) {
-      console.log("Error fetching conversation names: ", error);
-    }
   };
 
   const selectRecentChat = async (conversation_id) => {
@@ -118,16 +114,11 @@ const ChatPage = () => {
     }
   };
 
-  const { user, loading, error } = useAuth();
   return (
     <div className="flex w-full h-screen ">
       <SidebarProvider>
         <section>
-          <ChatSideBar
-            recentChats={convosNames}
-            onNewChat={newChat}
-            selectRecentChat={selectRecentChat}
-          />
+          <ChatSideBar onNewChat={newChat} />
         </section>
 
         <section className="flex flex-1 flex-col bg-white min-h-0">

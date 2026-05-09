@@ -7,6 +7,7 @@ use OpenAI\Laravel\Facades\OpenAI;
 use App\Models\BibleVerse;
 use App\Models\Conversation;
 use App\Models\Message;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AIController extends Controller
@@ -16,7 +17,7 @@ class AIController extends Controller
         try {
  $userQuestion = $request->input('prompt');
         $userHistory = $request->input('history');
-        $user = auth()->user();
+        $user = Auth::user();
         Log::channel('custom')->info($user);
         $response = OpenAI::embeddings()->create([
             'model' => 'text-embedding-ada-002',
@@ -101,7 +102,7 @@ class AIController extends Controller
 
     public function getAllConversationNames(){
         try {
-            $user = auth()->user();
+            $user = Auth::user();
             $conversation_names = Conversation::where('user_id', $user->id)->pluck('name');
             $conversation_id = Conversation::where('user_id', $user->id)->pluck('id');
             return response()->json([
@@ -120,10 +121,24 @@ class AIController extends Controller
         return response()->json($messages,200);
     }
 
-    public function getConversationNameByName(Request $request){
+ public function getConversationNameByName(Request $request){
         try {
-            $name = $request->input('name');
-            $conversations  = Conversation::search( $name)->get();
+            $user = Auth::user();
+            $searchTerm = trim((string) ($request->input('query') ?? $request->input('name') ?? ''));
+
+            if ($searchTerm === '') {
+                return response()->json([
+                    'success' => true,
+                    'conversations' => [],
+                ], 200);
+            }
+
+            $conversations = Conversation::query()
+                ->where('user_id', $user->id)
+                ->where('name', 'ILIKE', "%{$searchTerm}%")
+                ->orderByDesc('id')
+                ->get();
+
             return response()->json([
                 'success' => true,
                 "conversations" => $conversations

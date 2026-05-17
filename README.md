@@ -15,7 +15,8 @@ The project also welcomes theological questions or seemingly trivial questions t
 
 
 ## UPDATE LOGIN Page
-<img width="1322" height="609" alt="image" src="https://github.com/user-attachments/assets/43c99b22-4ed5-47cd-bd77-f50258e66088" />
+<img width="1240" height="574" alt="image" src="https://github.com/user-attachments/assets/54f182b8-b5c6-42d6-bc33-0bdf21b917b8" />
+
 
 
 

@@ -197,9 +197,6 @@ const ChatPage = () => {
                 placeholder={"Type your message here..."}
                 {...register("prompt")}
               />
-              {/* {errors.prompt?.message && (
-              <p className="text-red-500">{errors.prompt.message}</p>
-            )} */}
 
               <Button
                 type="submit"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { authServices } from "../../services/AuthServices";
+import { authServices } from "../features/auth/api/auth-api";
 
 export const useAuth = () => {
   const [userData, setUserData] = useState(null);

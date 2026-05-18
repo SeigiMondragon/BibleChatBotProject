@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import ReactMarkdown from "react-markdown";
 import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSideBar } from "@/components/custom/chatSidebar";
-import { chatServices } from "../services/ChatServices";
+import { chatServices } from "../src/features/chat/api/chat-api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SearchSchema } from "../src/schemas/SearchSchema";
 import { useNavigate } from "react-router-dom";
+import SearchForm from "../src/features/search/components/search-form";
+import SearchResults from "../src/features/search/components/search-results";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
@@ -79,49 +78,19 @@ const SearchPage = () => {
             </div>
           </div>
 
-          <form
-            className="shrink-0 bg-primary/5 border-b border-primary/10 p-6"
-            onSubmit={handleSubmit(searchConversation)}
-          >
-            <div className="flex gap-3 max-w-3xl">
-              <Input
-                {...register("search")}
-                placeholder="Search conversation title..."
-                className="bg-white border-secondary-foreground text-primary"
-              />
-              <Button
-                type="submit"
-                disabled={isSearching}
-                className="border border-secondary bg-secondary text-white"
-              >
-                {isSearching ? "Searching..." : "Search"}
-              </Button>
-            </div>
-          </form>
+          <SearchForm
+            handleSubmit={handleSubmit}
+            register={register}
+            onSearch={searchConversation}
+            isSearching={isSearching}
+          />
 
           <div className="flex-1 min-h-0 overflow-y-auto p-6">
-            {searchResults.length === 0 ? (
-              <div className="text-primary/70">
-                {query.trim()
-                  ? "No matching conversations found."
-                  : "Type a conversation name and click Search."}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {searchResults.map((conversation) => (
-                  <button
-                    key={conversation.id}
-                    type="button"
-                    onClick={() => navigate(`/chat/${conversation.id}`)}
-                    className={`rounded-2xl border px-4 py-3 text-left transition-colors`}
-                  >
-                    <div className="font-semibold truncate">
-                      {conversation.name}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <SearchResults
+              query={query}
+              searchResults={searchResults}
+              onSelect={(conversationId) => navigate(`/chat/${conversationId}`)}
+            />
           </div>
         </section>
       </SidebarProvider>

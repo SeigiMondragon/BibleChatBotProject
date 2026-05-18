@@ -1,4 +1,4 @@
-import ax from "../src/lib/axios";
+import ax from "axios";
 
 export const authServices = {
   login: async (email, password) => {

@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { chatSchema } from "../src/schemas/ChatSchema";
-import { chatServices } from "../services/ChatServices";
-import TextType from "../plugins/textTypeAnim";
-import ReactMarkdown from "react-markdown";
+import { chatSchema } from "../src/features/chat/schemas/ChatSchema";
+import { chatServices } from "../src/features/chat/api/chat-api";
 import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSideBar } from "@/components/custom/chatSidebar";
 import { useAuth } from "../src/hooks/useAuth";
 import { useParams } from "react-router-dom";
+import ConversationComponent from "../src/features/chat/components/conversation-component";
+import ChatForm from "../src/features/chat/components/chat-form";
 
 const RECENT_CHATS_KEY = "recent_chats";
 
@@ -30,7 +26,6 @@ const ChatPage = () => {
 
   useEffect(() => {
     try {
-      // getConvosNames();
       const savedRecentChats = JSON.parse(
         localStorage.getItem(RECENT_CHATS_KEY) ?? "[]",
       );
@@ -122,7 +117,6 @@ const ChatPage = () => {
         </section>
 
         <section className="flex flex-1 flex-col bg-white min-h-0">
-          {/* Upper Part */}
           <div className="flex justify-between items-center shrink-0 bg-primary w-full p-3">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-white hover:bg-white/10 hover:text-white" />
@@ -134,78 +128,14 @@ const ChatPage = () => {
             </div>
           </div>
 
-          {/* Chat Part */}
-          {messages.length > 0 ? (
-            <div className="flex-1 min-h-0 overflow-y-auto py-5 flex flex-col">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`border border-primary px-5 mx-5 my-5 rounded-2xl   ${
-                    message.role === "user"
-                      ? "self-end text-primary-foreground bg-primary"
-                      : "self-start text-primary bg-primary-foreground"
-                  }`}
-                >
-                  <ReactMarkdown>{message.message}</ReactMarkdown>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="border border-black px-5 mx-5 my-5 rounded-2xl self-start ">
-                  <TextType
-                    className="text-primary bg-primary-foreground"
-                    text={[
-                      "Looking for the Verses",
-                      "Aligning Answers with the Bible",
-                    ]}
-                    typingSpeed={75}
-                    pauseDuration={1500}
-                    showCursor
-                    cursorCharacter="_"
-                    deletingSpeed={50}
-                    cursorBlinkDuration={0.5}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex-1 min-h-0 flex w-full items-center justify-center px-4">
-              <TextType
-                className="text-3xl text-primary bg-primary-foreground"
-                text={[
-                  "Hi I am BibleBot",
-                  "Your Personal Bible Chat Bot",
-                  "Happy Reading!",
-                ]}
-                typingSpeed={75}
-                pauseDuration={1500}
-                showCursor
-                cursorCharacter="_"
-                deletingSpeed={50}
-                cursorBlinkDuration={0.5}
-              />
-            </div>
-          )}
-
-          {/* Prompt Part */}
+          <ConversationComponent messages={messages} isLoading={isLoading} />
           <div className="shrink-0">
-            <form
-              className="flex justify-center items-center bg-primary w-full max-w-full py-5 px-10"
-              onSubmit={handleSubmit(onSubmit)}
-            >
-              <Textarea
-                className="border-secondary-foreground bg-white placeholder:text-primary font-bold me-3 w-9/12 resize-none"
-                placeholder={"Type your message here..."}
-                {...register("prompt")}
-              />
-
-              <Button
-                type="submit"
-                className={`py-5 px-5 ${isLoading ? "bg-primary text-special" : " border border-secondary bg-secondary text-white"}`}
-                disabled={isLoading}
-              >
-                {isLoading ? "Sending..." : "Send"}
-              </Button>
-            </form>
+            <ChatForm
+              handleSubmit={handleSubmit}
+              onSubmit={onSubmit}
+              register={register}
+              isLoading={isLoading}
+            />
           </div>
         </section>
       </SidebarProvider>

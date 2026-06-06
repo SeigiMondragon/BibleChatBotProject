@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\BibleVerse;
-use OpenAI\Laravel\Facades\OpenAI; // Use the 8.2 compatible facade
+use Illuminate\Support\Facades\DB;
+use OpenAI\Laravel\Facades\OpenAI;
 
 class ImportBible extends Command
 {
@@ -12,7 +12,7 @@ class ImportBible extends Command
      * The name and signature of the console command.
      * This is what you type: 'php artisan bible:import'
      */
-    protected $signature = 'bible:import';
+    protected $signature = 'bible:import {--batch-size=100 : Number of verses to embed per request}';
 
     /**
      * The console command description.
@@ -23,83 +23,70 @@ class ImportBible extends Command
      * Execute the console command.
      */
     public function handle()
-{
-    $path = storage_path('bible.json'); // Updated to match your filename
+    {
+        $path = storage_path('bible.json');
 
-    if (!file_exists($path)) {
-        $this->error("Bible file not found at: $path");
-        return;
-    }
-
-    $json = file_get_contents($path);
-    $data = json_decode($json, true);
-
-    // In your JSON, all verses are in a flat array under the 'verses' key
-    $verses = $data['verses'] ?? [];
-
-    if (empty($verses)) {
-        $this->error('No verses found in bible.json.');
-        return;
-    }
-
-    $this->info("Starting import of " . count($verses) . " verses...");
-
-    // Process in larger chunks to speed up the import.
-    // Each chunk will be sent as a single embeddings request with many inputs.
-    $batchSize = 100; // adjust if you hit rate limits
-    $chunks = array_chunk($verses, $batchSize);
-
-    foreach ($chunks as $chunkIndex => $chunk) {
-        // Collect verse texts for this chunk
-        $inputs = [];
-        foreach ($chunk as $verseData) {
-            $inputs[] = $verseData['text'];
+        if (!file_exists($path)) {
+            $this->error("Bible file not found at: $path");
+            return Command::FAILURE;
         }
 
-        try {
-            // 1. Get embeddings for all verses in this chunk with a single API call
-            $response = OpenAI::embeddings()->create([
-                'model' => 'text-embedding-3-small',
-                'input' => $inputs,
-            ]);
+        $json = file_get_contents($path);
+        $data = json_decode($json, true);
+        $verses = $data['verses'] ?? [];
 
-            if (!isset($response->embeddings) || count($response->embeddings) !== count($chunk)) {
-                throw new \RuntimeException('Embedding count does not match verse count in batch.');
-            }
+        if (empty($verses)) {
+            $this->error('No verses found in bible.json.');
+            return Command::FAILURE;
+        }
 
-            // 2. Store each verse with its corresponding embedding
-            foreach ($chunk as $i => $verseData) {
-                $bookName = $verseData['book_name'];
-                $chapter = $verseData['chapter'];
-                $verseNum = $verseData['verse'];
-                $verseText = $verseData['text'];
+        $batchSize = max(1, (int) $this->option('batch-size'));
+        $chunks = array_chunk($verses, $batchSize);
 
-                $reference = "$bookName $chapter:$verseNum";
+        $this->info('Starting import of ' . count($verses) . ' verses in ' . count($chunks) . ' batches...');
 
-                $embeddingArray = $response->embeddings[$i]->embedding;
+        foreach ($chunks as $chunkIndex => $chunk) {
+            $inputs = array_map(static fn (array $verseData) => $verseData['text'], $chunk);
 
-                if (!is_array($embeddingArray)) {
-                    throw new \RuntimeException("Embedding response for $reference was not an array as expected.");
+            try {
+                $response = OpenAI::embeddings()->create([
+                    'model' => 'text-embedding-3-small',
+                    'input' => $inputs,
+                ]);
+
+                if (!isset($response->embeddings) || count($response->embeddings) !== count($chunk)) {
+                    throw new \RuntimeException('Embedding count does not match verse count in batch.');
                 }
 
-                $embeddingString = '[' . implode(',', array_map('strval', $embeddingArray)) . ']';
+                $rows = [];
 
-                BibleVerse::create([
-                    'reference' => $reference,
-                    'content' => $verseText,
-                    'embedding' => $embeddingString,
-                ]);
+                foreach ($chunk as $i => $verseData) {
+                    $reference = $verseData['book_name'] . ' ' . $verseData['chapter'] . ':' . $verseData['verse'];
+                    $embeddingArray = $response->embeddings[$i]->embedding;
+
+                    if (!is_array($embeddingArray)) {
+                        throw new \RuntimeException("Embedding response for $reference was not an array as expected.");
+                    }
+
+                    $rows[] = [
+                        'reference' => $reference,
+                        'content' => $verseData['text'],
+                        'embedding' => '[' . implode(',', array_map('strval', $embeddingArray)) . ']',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                DB::table('bible_verses')->insert($rows);
+
+                $this->info('Imported batch ' . ($chunkIndex + 1) . ' of ' . count($chunks) . '.');
+            } catch (\Exception $e) {
+                $this->error('Failed to import batch ' . ($chunkIndex + 1) . ': ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            $this->error('Failed to import batch ' . ($chunkIndex + 1) . ': ' . $e->getMessage());
         }
 
-        $this->info('Imported batch ' . ($chunkIndex + 1) . ' of ' . count($chunks) . '...');
+        $this->info('Bible import complete!');
 
-        // Short sleep between batches to be gentle with rate limits
-        usleep(200000); // 0.2 seconds
+        return Command::SUCCESS;
     }
-
-    $this->info("Bible import complete!");
-}
 }

@@ -3,8 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { chatSchema } from "../src/features/chat/schemas/ChatSchema";
 import BibleBotLogo2 from "@/assets/BibleBotLogo2.svg";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { ChatSideBar } from "@/components/custom/chatSidebar";
 import { useParams } from "react-router-dom";
 import ConversationComponent from "../src/features/chat/components/conversation-component";
 import ChatForm from "../src/features/chat/components/chat-form";
@@ -14,34 +12,17 @@ import {
   useSubmitChatMutation,
 } from "../src/features/chat/hooks/use-chat";
 
-const RECENT_CHATS_KEY = "recent_chats";
-
 const ChatPage = () => {
   const { register, handleSubmit, reset } = useForm({
     resolver: zodResolver(chatSchema),
   });
   const { convoID } = useParams();
   const [messages, setMessages] = useState([]);
-  const [recentChats, setRecentChats] = useState([]);
   const [conversation_id, setConversation_id] = useState(null);
-  const [history, setHistory] = useState([]);
   const { data: conversationMessages, isPending: isConversationLoading } =
     useConversationMessagesQuery(convoID);
   const { mutateAsync: submitChat, isPending: isLoading } =
     useSubmitChatMutation();
-
-  useEffect(() => {
-    try {
-      const savedRecentChats = JSON.parse(
-        localStorage.getItem(RECENT_CHATS_KEY) ?? "[]",
-      );
-      if (Array.isArray(savedRecentChats)) {
-        setRecentChats(savedRecentChats);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, []);
 
   useEffect(() => {
     if (convoID) {
@@ -56,20 +37,6 @@ const ChatPage = () => {
       setMessages(conversationMessages);
     }
   }, [conversationMessages]);
-
-  const saveRecentChat = (chatText) => {
-    const normalizedChat = chatText.trim();
-    if (!normalizedChat) return;
-
-    setRecentChats((prev) => {
-      const nextRecentChats = [
-        normalizedChat,
-        ...prev.filter((chat) => chat !== normalizedChat),
-      ].slice(0, 30);
-
-      localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(nextRecentChats));
-    });
-  };
 
   const onSubmit = async (data) => {
     const userMessage = data.prompt;
@@ -103,57 +70,48 @@ const ChatPage = () => {
   const newChat = async () => {
     setMessages([]);
     setConversation_id(null);
-    setHistory([]);
   };
 
   return (
-    <div className="flex w-full h-screen ">
-      <SidebarProvider>
-        <section>
-          <ChatSideBar onNewChat={newChat} activeConversationId={convoID} />
-        </section>
+    <>
+      <div className="flex justify-between items-center shrink-0 bg-primary w-full p-3">
+        <div className="flex items-center gap-3">
+          <img
+            src={BibleBotLogo2}
+            alt="Bible Chat Bot"
+            className="w-30 h-auto"
+          />
+        </div>
+      </div>
 
-        <section className="flex flex-1 flex-col bg-white min-h-0">
-          <div className="flex justify-between items-center shrink-0 bg-primary w-full p-3">
-            <div className="flex items-center gap-3">
-              <img
-                src={BibleBotLogo2}
-                alt="Bible Chat Bot"
-                className="w-30 h-auto"
-              />
+      <div className="relative flex-1 min-h-0 flex overflow-hidden">
+        <ConversationComponent messages={messages} isLoading={isLoading} />
+        {isConversationLoading && convoID && (
+          <div className="absolute inset-0 overflow-y-auto py-5 bg-white">
+            <div className="mx-5 my-5">
+              <Skeleton className="h-16 w-2/3 bg-secondary-foreground rounded-4xl" />
+            </div>
+            <div className="mx-5 my-5 flex justify-end ">
+              <Skeleton className="h-16 w-1/2 bg-secondary rounded-4xl" />
+            </div>
+            <div className="mx-5 my-5">
+              <Skeleton className="h-16 w-3/4 bg-secondary-foreground rounded-4xl" />
+            </div>
+            <div className="mx-3 my-5 flex justify-end ">
+              <Skeleton className="h-16 w-1/2 bg-secondary rounded-4xl" />
             </div>
           </div>
-
-          <div className="relative flex-1 min-h-0 flex overflow-hidden">
-            <ConversationComponent messages={messages} isLoading={isLoading} />
-            {isConversationLoading && convoID && (
-              <div className="absolute inset-0 overflow-y-auto py-5 bg-white">
-                <div className="mx-5 my-5">
-                  <Skeleton className="h-16 w-2/3 bg-secondary-foreground rounded-4xl" />
-                </div>
-                <div className="mx-5 my-5 flex justify-end ">
-                  <Skeleton className="h-16 w-1/2 bg-secondary rounded-4xl" />
-                </div>
-                <div className="mx-5 my-5">
-                  <Skeleton className="h-16 w-3/4 bg-secondary-foreground rounded-4xl" />
-                </div>
-                <div className="mx-3 my-5 flex justify-end ">
-                  <Skeleton className="h-16 w-1/2 bg-secondary rounded-4xl" />
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="shrink-0">
-            <ChatForm
-              handleSubmit={handleSubmit}
-              onSubmit={onSubmit}
-              register={register}
-              isLoading={isLoading}
-            />
-          </div>
-        </section>
-      </SidebarProvider>
-    </div>
+        )}
+      </div>
+      <div className="shrink-0">
+        <ChatForm
+          handleSubmit={handleSubmit}
+          onSubmit={onSubmit}
+          register={register}
+          isLoading={isLoading}
+        />
+      </div>
+    </>
   );
 };
 

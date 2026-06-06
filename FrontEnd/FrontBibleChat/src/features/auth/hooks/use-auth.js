@@ -5,9 +5,6 @@ export function useUserQuery() {
   return useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return null;
-
       return authServices.getUser();
     },
     staleTime: 5 * 60 * 1000,

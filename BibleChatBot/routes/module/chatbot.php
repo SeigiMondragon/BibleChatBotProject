@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AIController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Middleware\InjectCookieAuth;
 
 
 Route::middleware('auth:api')->controller(AIController::class)->group(function(){

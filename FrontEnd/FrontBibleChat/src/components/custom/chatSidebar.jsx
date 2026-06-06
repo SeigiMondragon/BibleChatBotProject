@@ -21,14 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
 import { useLogoutMutation } from "../../features/auth/hooks/use-auth";
 import { useConversationNamesQuery } from "../../features/chat/hooks/use-chat";
 import { toast } from "sonner";
-export function ChatSideBar({ onNewChat, activeConversationId }) {
+export function ChatSideBar({ activeConversationId, user }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
   const { setOpen } = useSidebar();
-  const { userData, loading, error } = useAuth();
+
   const navigate = useNavigate();
   const logout = useLogoutMutation();
   const { data: conversationNamesData, isPending: isConvosLoading } =
@@ -51,9 +50,9 @@ export function ChatSideBar({ onNewChat, activeConversationId }) {
     });
   };
 
-  const usernameLabel = loading
+  const usernameLabel = user?.loading
     ? "Loading..."
-    : (userData?.username ?? "Account");
+    : (user?.userData?.username ?? "Account");
 
   const convosNames =
     conversationNamesData?.conversation_id?.map((id, index) => ({
@@ -74,7 +73,7 @@ export function ChatSideBar({ onNewChat, activeConversationId }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 type="button"
-                onClick={(e) => {
+                onClick={() => {
                   setOpen(true);
                   navigate("/chat");
                 }}

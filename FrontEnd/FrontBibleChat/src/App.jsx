@@ -7,7 +7,7 @@ import AuthPage from "../pages/AuthPage";
 import SearchPage from "../pages/SearchPage";
 
 import AuthLayout from "../layout/AuthLayout";
-import ChatLayout from "../layout/chatlayout";
+import ChatLayout from "../layout/ChatLayout";
 import { Toaster } from "./components/ui/sonner";
 
 function App() {

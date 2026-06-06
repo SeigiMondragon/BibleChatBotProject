@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,54 +11,63 @@ import {
   SidebarMenuButton,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarMenuBadge,
   useSidebar,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import BibleBotLogo3 from "@/assets/BibleBotLogo3.svg";
 import { useAuth } from "../../hooks/useAuth";
-import { chatServices } from "../../../services/ChatServices";
-
-export function ChatSideBar({ onNewChat }) {
+import { useLogoutMutation } from "../../features/auth/hooks/use-auth";
+import { useConversationNamesQuery } from "../../features/chat/hooks/use-chat";
+import { toast } from "sonner";
+export function ChatSideBar({ onNewChat, activeConversationId }) {
   const [isRecentOpen, setIsRecentOpen] = useState(true);
   const { setOpen } = useSidebar();
   const { userData, loading, error } = useAuth();
-  const [convosNames, setConvosNames] = useState([]);
   const navigate = useNavigate();
+  const logout = useLogoutMutation();
+  const { data: conversationNamesData, isPending: isConvosLoading } =
+    useConversationNamesQuery();
+
   const handleSearch = () => {
     navigate("/chat/search");
   };
   const navChats = (id) => navigate(`/chat/${id}`);
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Logged out");
+        navigate("/");
+      },
+      onError: (error) => {
+        const message = error?.response?.data?.message || "Logout failed";
+        toast.error(message);
+      },
+    });
+  };
 
-  useEffect(() => {
-    let isMounted = true;
+  const usernameLabel = loading
+    ? "Loading..."
+    : (userData?.username ?? "Account");
 
-    const fetchConversations = async () => {
-      try {
-        const response = await chatServices.getConversationName();
-        if (isMounted) {
-          const transformedConvos = response.conversation_id.map(
-            (id, index) => ({
-              conversation_id: id,
-              conversation_names: response.conversation_names[index],
-            }),
-          );
-          setConvosNames(transformedConvos);
-        }
-      } catch (error) {
-        console.log("Error fetching conversation names: ", error);
-      }
-    };
-
-    fetchConversations();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const convosNames =
+    conversationNamesData?.conversation_id?.map((id, index) => ({
+      conversation_id: id,
+      conversation_names: conversationNamesData.conversation_names[index],
+    })) ?? [];
 
   return (
     <Sidebar collapsible="icon" className="border border-secondary">
-      <SidebarHeader className="bg-primary text-white "></SidebarHeader>
+      <SidebarHeader className="bg-primary text-white">
+        <div className="flex items-center justify-between">
+          <SidebarTrigger className="text-white hover:bg-white/10 hover:text-white" />
+        </div>
+      </SidebarHeader>
       <SidebarContent className="bg-primary text-white">
         <SidebarGroup>
           <SidebarMenu>
@@ -118,23 +127,40 @@ export function ChatSideBar({ onNewChat }) {
               </SidebarMenuButton>
               {isRecentOpen && (
                 <SidebarMenuSub>
-                  {convosNames.length > 0 ? (
-                    convosNames.map((chat) => (
-                      <SidebarMenuSubItem key={chat.conversation_id}>
-                        <SidebarMenuSubButton asChild>
-                          <button
-                            type="button"
-                            className="flex w-full min-w-0 items-center text-left text-white hover:bg-secondary"
-                            title={chat.conversation_names}
-                            onClick={() => navChats(chat.conversation_id)}
-                          >
-                            <span className="block w-full truncate">
-                              {chat.conversation_names}
-                            </span>
-                          </button>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))
+                  {isConvosLoading ? (
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <span className="text-white">Loading...</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ) : convosNames.length > 0 ? (
+                    convosNames.map((chat) => {
+                      const isActive =
+                        String(chat.conversation_id) ===
+                        String(activeConversationId ?? "");
+
+                      return (
+                        <SidebarMenuSubItem key={chat.conversation_id}>
+                          <SidebarMenuSubButton asChild>
+                            <button
+                              type="button"
+                              className={`flex w-full min-w-0 items-center text-left text-white ${
+                                isActive
+                                  ? "bg-secondary/70"
+                                  : "hover:bg-secondary"
+                              }`}
+                              title={chat.conversation_names}
+                              onClick={() => navChats(chat.conversation_id)}
+                              aria-current={isActive ? "page" : undefined}
+                            >
+                              <span className="block w-full truncate">
+                                {chat.conversation_names}
+                              </span>
+                            </button>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })
                   ) : (
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
@@ -151,12 +177,21 @@ export function ChatSideBar({ onNewChat }) {
       <SidebarFooter className="bg-primary text-white">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => setOpen(true)}>
-              <i className="bi bi-person-fill"></i>
-              <span className="group-data-[collapsible=icon]:hidden">
-                {userData?.user.username}
-              </span>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton onClick={() => setOpen(true)}>
+                  <i className="bi bi-person-fill"></i>
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    {usernameLabel}
+                  </span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" sideOffset={8}>
+                <DropdownMenuItem onSelect={handleLogout}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

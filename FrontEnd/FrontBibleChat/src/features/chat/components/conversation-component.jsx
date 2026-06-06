@@ -4,7 +4,7 @@ import TextType from "../../../../plugins/textTypeAnim";
 const ConversationComponent = ({ messages, isLoading }) => {
   if (messages.length === 0) {
     return (
-      <div className="flex-1 min-h-0 flex w-full items-center justify-center px-4">
+      <div className="h-full w-full flex items-center justify-center px-4">
         <TextType
           className="text-3xl text-primary bg-primary-foreground"
           text={[
@@ -24,7 +24,7 @@ const ConversationComponent = ({ messages, isLoading }) => {
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto py-5 flex flex-col">
+    <div className="h-full w-full overflow-y-auto py-5 flex flex-col">
       {messages.map((message, index) => (
         <div
           key={index}

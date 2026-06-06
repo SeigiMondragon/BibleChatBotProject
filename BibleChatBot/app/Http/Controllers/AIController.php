@@ -35,7 +35,12 @@ class AIController extends Controller
         $response = OpenAI::chat()->create([
         'model' => 'gpt-4o',
         'messages' => [
-            ['role' => 'system', 'content' => "You are a Bible Assistant. Answer the user question by using the information from the following verses: " . $context],
+            ['role' => 'system', 'content' => "You are a well-versed Bible Scholar. Your task is to answer the user's question as long as it is about the Bible Query, Holy Living, and even Bible Verse Implications:
+
+            ## This is the Question of the user: {$context}
+
+            If you are being asked about something that concerns Bible, Holy Living, or Bible Verse Implications, please answer the question. If you are asked about something else, please respond with 'I'm sorry, I don't know how to help with that.'
+            "],
             ...($userHistory ?? []),
             ['role' => 'user', 'content' => $userQuestion],
         ],
@@ -100,14 +105,15 @@ class AIController extends Controller
 
     }
 
-    public function getAllConversationNames(){
+public function getAllConversationNames(){
         try {
             $user = Auth::user();
-            $conversation_names = Conversation::where('user_id', $user->id)->pluck('name');
-            $conversation_id = Conversation::where('user_id', $user->id)->pluck('id');
+            $conversations = Conversation::where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->get(['id', 'name']);
             return response()->json([
-                "conversation_names" => $conversation_names,
-                "conversation_id" => $conversation_id
+                "conversation_names" => $conversations->pluck('name'),
+                "conversation_id" => $conversations->pluck('id')
             ],200);
         }catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -115,7 +121,7 @@ class AIController extends Controller
 
     }
 
-    public function getConversationMessages(  $conversation_id){
+public function getConversationMessages( $conversation_id){
         $conversation = Conversation::where('id', $conversation_id)->first();;
         $messages = Message::where('conversation_id', $conversation->id)->get();
         return response()->json($messages,200);

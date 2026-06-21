@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use OpenAI\Laravel\Facades\OpenAI;
 
 class ImportBible extends Command
@@ -12,7 +13,7 @@ class ImportBible extends Command
      * The name and signature of the console command.
      * This is what you type: 'php artisan bible:import'
      */
-    protected $signature = 'bible:import {--batch-size=100 : Number of verses to embed per request}';
+    protected $signature = 'bible:import {--batch-size=100 : Number of verses to include in each embedded chunk}';
 
     /**
      * The console command description.
@@ -22,71 +23,117 @@ class ImportBible extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        $path = storage_path('bible.json');
-
-        if (!file_exists($path)) {
-            $this->error("Bible file not found at: $path");
-            return Command::FAILURE;
-        }
-
-        $json = file_get_contents($path);
-        $data = json_decode($json, true);
-        $verses = $data['verses'] ?? [];
-
-        if (empty($verses)) {
-            $this->error('No verses found in bible.json.');
-            return Command::FAILURE;
-        }
-
         $batchSize = max(1, (int) $this->option('batch-size'));
-        $chunks = array_chunk($verses, $batchSize);
+        $chaptersUrl = 'https://bible.helloao.org/api/BSB/books.json';
 
-        $this->info('Starting import of ' . count($verses) . ' verses in ' . count($chunks) . ' batches...');
+        try {
+            $response = Http::get($chaptersUrl);
+            $decodedResponse = json_decode($response->body(), true);
+            $books = $decodedResponse['books'] ?? [];
 
-        foreach ($chunks as $chunkIndex => $chunk) {
-            $inputs = array_map(static fn (array $verseData) => $verseData['text'], $chunk);
-
-            try {
-                $response = OpenAI::embeddings()->create([
-                    'model' => 'text-embedding-3-small',
-                    'input' => $inputs,
-                ]);
-
-                if (!isset($response->embeddings) || count($response->embeddings) !== count($chunk)) {
-                    throw new \RuntimeException('Embedding count does not match verse count in batch.');
-                }
-
-                $rows = [];
-
-                foreach ($chunk as $i => $verseData) {
-                    $reference = $verseData['book_name'] . ' ' . $verseData['chapter'] . ':' . $verseData['verse'];
-                    $embeddingArray = $response->embeddings[$i]->embedding;
-
-                    if (!is_array($embeddingArray)) {
-                        throw new \RuntimeException("Embedding response for $reference was not an array as expected.");
-                    }
-
-                    $rows[] = [
-                        'reference' => $reference,
-                        'content' => $verseData['text'],
-                        'embedding' => '[' . implode(',', array_map('strval', $embeddingArray)) . ']',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-
-                DB::table('bible_verses')->insert($rows);
-
-                $this->info('Imported batch ' . ($chunkIndex + 1) . ' of ' . count($chunks) . '.');
-            } catch (\Exception $e) {
-                $this->error('Failed to import batch ' . ($chunkIndex + 1) . ': ' . $e->getMessage());
+            if (empty($books)) {
+                $this->error('No books found from the Bible API response.');
+                return Command::FAILURE;
             }
+
+            foreach ($books as $book) {
+                $chunkText = [];
+                $chunkStartRef = null;
+                $chunkEndRef = null;
+
+                $bookId = $book['id'];
+                $bookName = $book['name'];
+                $chapterCount = (int) $book['numberOfChapters'];
+
+                $this->info("Importing $bookName...");
+
+                for ($chapterNumber = 1; $chapterNumber <= $chapterCount; $chapterNumber++) {
+                    $chapterResponse = Http::get("https://bible.helloao.org/api/BSB/$bookId/$chapterNumber.json");
+                    $decodedChapterResponse = json_decode($chapterResponse->body(), true);
+
+                    $chapterContents = $decodedChapterResponse['chapter']['content'] ?? [];
+
+                    foreach ($chapterContents as $content) {
+                        if (($content['type'] ?? null) !== 'verse') {
+                            continue;
+                        }
+
+                        $verseText = $this->flattenContent($content['content'] ?? []);
+
+                        if (trim($verseText) === '') {
+                            continue;
+                        }
+
+                        $verse = $content['number'];
+
+                        if ($chunkStartRef === null) {
+                            $chunkStartRef = "$bookName $chapterNumber:$verse";
+                        }
+
+                        $chunkEndRef = "$bookName $chapterNumber:$verse";
+                        $chunkText[] = $verseText;
+
+                        if (count($chunkText) === $batchSize) {
+                            $this->saveChunk($chunkText, $chunkStartRef, $chunkEndRef);
+
+                            $chunkText = [];
+                            $chunkStartRef = null;
+                            $chunkEndRef = null;
+                        }
+                    }
+                }
+
+                if (count($chunkText) > 0) {
+                    $this->saveChunk($chunkText, $chunkStartRef, $chunkEndRef);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return Command::FAILURE;
         }
 
         $this->info('Bible import complete!');
 
         return Command::SUCCESS;
+    }
+
+    private function flattenContent(array $content): string
+    {
+        $text = '';
+
+        foreach ($content as $part) {
+            if (is_string($part)) {
+                $text .= $part . ' ';
+            }
+
+            if (is_array($part) && isset($part['text'])) {
+                $text .= $part['text'] . ' ';
+            }
+        }
+
+        return trim($text);
+    }
+
+    private function saveChunk(array $chunk, string $startRef, string $endRef): void
+    {
+        $chunkText = implode(' ', $chunk);
+        $reference = $startRef . ' - ' . $endRef;
+
+        $embedding = OpenAI::embeddings()->create([
+            'model' => 'text-embedding-3-small',
+            'input' => $chunkText,
+        ]);
+
+        DB::table('bible_verses')->insert([
+            'reference' => $reference,
+            'content' => $chunkText,
+            'embedding' => json_encode($embedding->embeddings[0]->embedding),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->info("Imported $reference.");
     }
 }

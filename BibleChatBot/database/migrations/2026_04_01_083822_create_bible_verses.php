@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
@@ -11,11 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bible_verses', function (Blueprint $table) {
+        DB::statement('CREATE EXTENSION IF NOT EXISTS vector SCHEMA public;');
+Schema::create('bible_verses', function (Blueprint $table) {
             $table->id();
-            $table->string('reference'); // e.g., "John 3:16"
-            $table->text('content');     // The actual text
-            $table->vector('embedding')->nullable(); // Store the AI-calculated "meaning"
+            $table->string('reference', 255);
+            $table->text('content');
+
+            // Your embedding column
+            $table->vector('embedding', 1536)->nullable(); // 1536 is standard for OpenAI, change if using a different model
+
             $table->timestamps();
         });
     }

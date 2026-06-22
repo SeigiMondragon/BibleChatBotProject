@@ -1,7 +1,8 @@
 import axios from "axios";
+import { env } from "process";
 
 const ax = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: env.VITE_BASE_URL,
   timeout: 10000,
   headers: {
     ContentType: "application/json",

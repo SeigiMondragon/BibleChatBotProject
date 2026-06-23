@@ -8,15 +8,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Resources\UserResource;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Requests\UserRequest;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ForgotMailPassword;
 
 class AuthController extends Controller
 {
-    public function register(Request $request){
+    public function register(UserRequest $request){
         try{
-            $email = $request->input("email");
-            $password = $request->input("password");
-            $username = $request->input("username");
+            $validated = $request->validated();
+            $email = $validated["email"];
+            $password = $validated["password"];
+            $username = $validated["username"];
+
+            if(User::where("email", $email)->exists()){
+                return response()->json([
+                    "success" => false,
+                    "message" => "User already exists"
+                ]);
+            }
 
             DB::transaction(function () use ($email, $password, $username) {
                 User::create([
@@ -39,10 +51,11 @@ class AuthController extends Controller
 
     }
 
-    public function login(Request $request){
+    public function login(UserRequest $request){
         try{
-            $email = $request->input("email");
-            $password = $request->input("password");
+            $validated = $request->validated();
+            $email = $validated["email"];
+            $password = $validated["password"];
 
             if(!User::where("email", $email)->exists()){
                 return response()->json([
@@ -97,5 +110,90 @@ class AuthController extends Controller
         return response()->json([
             "success" => true,
         ],200)->withCookie($cookie);
+    }
+
+    public function sendForgotPassword(UserRequest $request){
+        $fiveMinutes = now()->subMinutes(5)->toDateTimeString();
+        $validated = $request->validated();
+        $email = $validated["email"];
+        $user = User::where("email", $email)->first();
+        if(!$user){
+            return response()->json([
+                "success" => false,
+                "message" => "User not found"
+            ], 400);
+        }
+
+
+        try{
+                $existingToken= DB::table('password_reset_tokens')->where('email', $email)->first();
+                if($existingToken ){
+                    $createdAt = \Carbon\Carbon::parse($existingToken->created_at);
+                    if($createdAt->gt($fiveMinutes)){
+                        return response()->json([
+                            "success" => false,
+                            "message" => "Password reset email were recently sent. Please Try again in 5 minutes"
+                        ]);
+                    }
+                    DB::table('password_reset_tokens')->where('email', $email)->delete();
+                }
+
+                $resetToken = Str::random(60);
+                $hashedToken = Hash::make($resetToken);
+                $selector = Str::random(10);
+                DB::transaction(function () use ($user, $hashedToken, $selector, $resetToken) {
+                    DB::table("password_reset_tokens")->insert([
+                        "email" => (string)$user->email,
+                        "selector" => (string) $selector,
+                        "token" => (string) $hashedToken,
+                        "created_at" => now()
+                    ]);
+                    Mail::to($user->email)->send(new ForgotMailPassword($user, $resetToken, $selector));
+                });
+                return response()->json([
+                    "success" => true,
+                    "message" => "Password reset email sent"
+                ]);
+
+        }catch(\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function resetPassword(Request $request){
+        $isTokenValid = $this->validateToken($request->selector, $request->token);
+        if (!$isTokenValid){
+            return response()->json([
+                "success" => false,
+                "message" => "Token is invalid or expired"
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            "password" => ["string", "required", Password::min(8)->mixedCase()->numbers()->symbols()]
+        ]);
+        $user = User::where("email", $request->email)->first();
+        $user->password = Hash::make($validated["password"]);
+        $user->save();
+        DB::table("password_reset_tokens")->where("selector", $request->selector)->delete();
+        return response()->json([
+            "success" => true,
+            "message" => "Password reset successfully"
+        ], 200);
+    }
+
+    public function validateToken( $selector, $plainToken){
+        $tokenRecord = DB::table("password_reset_tokens")->where("selector", $selector)->first();
+        if (!$tokenRecord){
+            return false;
+        }
+        if (!Hash::check($plainToken, $tokenRecord->token)) {
+        return false;
+        }
+
+        return true;
     }
 }

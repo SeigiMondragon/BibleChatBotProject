@@ -4,6 +4,8 @@ import ChatPage from "../pages/ChatPage";
 import RegisterPage from "../pages/RegisterPage";
 
 import AuthPage from "../pages/AuthPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import SearchPage from "../pages/SearchPage";
 
 import AuthLayout from "../layout/AuthLayout";
@@ -19,6 +21,11 @@ function App() {
           <Route index element={<Navigate to="/auth" replace />} />
           <Route path="auth" element={<AuthPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="reset-password/:selectorParam/:tokenParam"
+            element={<ResetPasswordPage />}
+          />
         </Route>
 
         <Route path="/chat" element={<ChatLayout />}>

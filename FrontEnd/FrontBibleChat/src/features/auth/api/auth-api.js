@@ -20,6 +20,19 @@ export const authServices = {
     const registerData = response.data;
     return RegisterResponseSchema.parse(registerData);
   },
+  forgotPassword: async (email) => {
+    const response = await ax.post("api/auth/forgot-password", { email });
+    return response.data;
+  },
+  resetPassword: async ({ email, password, selector, token }) => {
+    const response = await ax.post("api/auth/reset-password", {
+      email,
+      password,
+      selector,
+      token,
+    });
+    return response.data;
+  },
   logout: async () => {
     localStorage.removeItem("token");
   },

@@ -11,6 +11,7 @@ const AuthPage = () => {
       footerText="Don't have an account?"
       footerActionText="Sign Up"
       onFooterAction={handleRegister}
+      showForgotPasswordLink
     >
       <LoginForm />
     </AuthPageLayout>

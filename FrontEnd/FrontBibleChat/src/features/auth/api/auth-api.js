@@ -1,4 +1,4 @@
-import ax from "axios";
+import ax from "@/lib/axios";
 import { AuthSchema } from "../schemas/AuthSchema";
 import { RegisterSchema } from "../schemas/RegisterSchema";
 import { LoginResponseSchema } from "../schemas/LoginResponseSchema";

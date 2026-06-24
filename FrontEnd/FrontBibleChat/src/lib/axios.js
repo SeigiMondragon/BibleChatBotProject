@@ -1,11 +1,12 @@
 import axios from "axios";
-import { env } from "process";
-
+console.log("Your API URL is:", import.meta.env.VITE_BASE_URL);
 const ax = axios.create({
-  baseURL: env.VITE_BASE_URL,
+  // Vite injects environment variables onto import.meta.env
+  baseURL: import.meta.env.VITE_BASE_URL,
   timeout: 10000,
   headers: {
-    ContentType: "application/json",
+    "Content-Type": "application/json", // Added the missing hyphen
+    Accept: "application/json", // Highly recommended for Laravel APIs
   },
 });
 

@@ -36,7 +36,7 @@ export const authServices = {
     localStorage.removeItem("token");
   },
   getUser: async () => {
-    const response = await ax.get("api/auth/me");
+    const response = await ax.get("/api/auth/me");
     return response.data?.user ?? null;
   },
 };

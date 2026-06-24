@@ -36,8 +36,8 @@ class UserRequest extends FormRequest
             ];
         }else {
             $fields = [
-                'username' => ['string', 'required'],
-                'password' => ['string', 'required', Password::min(8)->mixedCase()->numbers()->symbols()],
+                'email' => ['string', 'required', 'exists:users'],
+                'password' => ['string', 'required'],
             ];
         }
 

@@ -12,7 +12,7 @@ export const authServices = {
     return LoginResponseSchema.parse(loginData);
   },
   register: async (email, username, password) => {
-    const response = await ax.post("api/auth/register", {
+    const response = await ax.post("/api/auth/register", {
       email,
       username,
       password,
@@ -21,12 +21,11 @@ export const authServices = {
     return RegisterResponseSchema.parse(registerData);
   },
   forgotPassword: async (email) => {
-    const response = await ax.post("api/auth/forgot-password", { email });
+    const response = await ax.post("/api/auth/forgot-password", { email });
     return response.data;
   },
-  resetPassword: async ({ email, password, selector, token }) => {
-    const response = await ax.post("api/auth/reset-password", {
-      email,
+  resetPassword: async ({ password, selector, token }) => {
+    const response = await ax.post("/api/auth/reset-password", {
       password,
       selector,
       token,

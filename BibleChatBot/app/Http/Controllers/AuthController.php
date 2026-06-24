@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Resources\UserResource;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\UserRequest;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ForgotMailPassword;
@@ -175,7 +175,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             "password" => ["string", "required", Password::min(8)->mixedCase()->numbers()->symbols()]
         ]);
-        $user = User::where("email", $request->email)->first();
+        $user = User::where("email", $isTokenValid->email)->first();
         $user->password = Hash::make($validated["password"]);
         $user->save();
         DB::table("password_reset_tokens")->where("selector", $request->selector)->delete();
@@ -194,6 +194,6 @@ class AuthController extends Controller
         return false;
         }
 
-        return true;
+        return $tokenRecord;
     }
 }
